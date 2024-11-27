@@ -1,0 +1,12 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/Library/Artifacts
+/Library/APIUpdater
+/Library
+/Logs
+/obj/Debug
+/Temp
+/UserSettings
+/.vs/PlatformerProjY2

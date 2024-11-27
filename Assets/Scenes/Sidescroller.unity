@@ -1697,6 +1697,8 @@ MonoBehaviour:
   isWalking: 0
   isGrounded: 0
   GroundTilemap: {fileID: 1054579204}
+  apexJump: 15
+  apexTime: 2
   direction: 0
 --- !u!4 &1433354315
 Transform:
@@ -1826,7 +1828,7 @@ Rigidbody2D:
   m_Mass: 1
   m_LinearDrag: 0
   m_AngularDrag: 0.05
-  m_GravityScale: 1
+  m_GravityScale: 0
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2

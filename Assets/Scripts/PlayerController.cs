@@ -8,6 +8,8 @@ public class PlayerController : MonoBehaviour
     public bool isWalking = false;
     public bool isGrounded = false;
     public GameObject GroundTilemap;
+    public float apexJump = 15f;
+    public float apexTime = 2f;
     
     public enum FacingDirection
     {
@@ -19,7 +21,6 @@ public class PlayerController : MonoBehaviour
     void Start()
     {
         rigidbody = GetComponent<Rigidbody2D>();
-
     }
    
 
@@ -54,19 +55,22 @@ public class PlayerController : MonoBehaviour
             direction = FacingDirection.right;
         }
 
-        if (Input.GetKeyDown(KeyCode.W))
+        if (Input.GetKey(KeyCode.W))
         {
-            rigidbody.AddForce(Vector2.up * 300);
-            RaycastHit2D hit = Physics2D.Raycast(rigidbody.transform.position, Vector2.down);
-            if(hit.collider.tag == "GroundTilemap")
-            {
-                isGrounded = true;
-            }
-            if(hit.collider.tag != "GroundTilemap")
-            {
-                isGrounded = false;
-                Debug.Log("Im in the air");
-            }
+            //RaycastHit2D hit = Physics2D.Raycast(rigidbody.transform.position, Vector2.down);
+            float jumpVelocity = 2* apexJump/apexTime;
+            float gravity = -2 * (apexJump / (Mathf.Pow(apexTime,2)));
+            jumpVelocity += gravity * Time.deltaTime;
+            //if (hit.collider.tag == "GroundTilemap")
+            //{
+            //    isGrounded = true;
+            //}
+            //else if (hit.collider.tag != "GroundTilemap")
+            //{
+            //    isGrounded = false;
+            //    Debug.Log("Im in the air");
+            //}
+            rigidbody.transform.position = new Vector2(rigidbody.transform.position.x, rigidbody.position.y + (jumpVelocity * Time.deltaTime));
             Debug.Log(isGrounded);
         }
     }
