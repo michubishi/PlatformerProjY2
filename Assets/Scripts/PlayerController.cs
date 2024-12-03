@@ -171,20 +171,26 @@ public class PlayerController : MonoBehaviour
     {
         if (isGrounded && Input.GetKey(KeyCode.Space))
         {
-            velocity.y += jumpDistance * 2;
+            velocity.y += jumpDistance * 1.25f;
             
-            if(velocity.y == initialJumpSpeed)
+            if(velocity.y >= initialJumpSpeed)
             {
-                initialJumpSpeed = velocity.y;
+                velocity.y = initialJumpSpeed;
+                ResetJump();
             }
-                
+            
             isGrounded = false;
         }
     }
 
+    private void ResetJump()
+    {
+        velocity.y = 0;
+    }
+
     /*
      * Author: Michelle Vuong
-     * Description: Dash
+     * Description: Dash. Holding left shift makes the player move forward
      */
     private void Dash()
     {
