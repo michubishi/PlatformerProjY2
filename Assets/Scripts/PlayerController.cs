@@ -1,92 +1,233 @@
-using Unity.Burst.CompilerServices;
 using UnityEngine;
+
+/**
+ * Horizontal/Veritcal movement here is not my code. Grabbed from A2_Platformer Template. 
+ * Numbers for movement may have been adjusted to match the movement that fits right for my platformer.
+ */
+public enum PlayerDirection
+{
+    left, right
+}
+
+public enum PlayerState
+{
+    idle, walking, jumping, dead
+}
 
 public class PlayerController : MonoBehaviour
 {
-    Rigidbody2D rigidbody;
-    public float speed = 0.02f;
-    public bool isWalking = false;
-    public bool isGrounded = false;
-    public GameObject GroundTilemap;
-    public float apexJump = 15f;
-    public float apexTime = 2f;
-    
-    public enum FacingDirection
+    [SerializeField] private Rigidbody2D body;
+    private PlayerDirection currentDirection = PlayerDirection.right;
+    public PlayerState currentState = PlayerState.idle;
+    public PlayerState previousState = PlayerState.idle;
+
+    [Header("Horizontal")]
+    public float maxSpeed = 5f;
+    public float accelerationTime = 0f;
+    public float decelerationTime = 0f;
+
+    [Header("Vertical")]
+    public float apexHeight = 3f;
+    public float apexTime = 0.5f;
+
+    [Header("Ground Checking")]
+    public float groundCheckOffset = 0.5f;
+    public Vector2 groundCheckSize = new(0.4f, 0.1f);
+    public LayerMask groundCheckMask;
+
+    private float accelerationRate;
+    private float decelerationRate;
+
+
+    private float dashForce = 2;
+
+    private float force = 100;
+
+    private float jumpDistance = 2;
+
+    private float gravity;
+    private float initialJumpSpeed;
+
+    private bool isGrounded = false;
+    public bool isDead = false;
+
+    private Vector2 velocity;
+
+    public void Start()
     {
-        left, right
+        body.gravityScale = 0;
+
+        accelerationRate = maxSpeed / accelerationTime;
+        decelerationRate = maxSpeed / decelerationTime;
+
+        gravity = -2 * apexHeight / (apexTime * apexTime);
+        initialJumpSpeed = 2 * apexHeight / apexTime;
     }
-    public FacingDirection direction;
 
-    // Start is called before the first frame update
-    void Start()
+    public void Update()
     {
-        rigidbody = GetComponent<Rigidbody2D>();
-    }
-   
+        previousState = currentState;
 
-    // Update is called once per frame
-    void Update()
-    {
-        // The input from the player needs to be determined and
-        // then passed in the to the MovementUpdate which should
-        // manage the actual movement of the character.
+        CheckForGround();
 
-        
-       Vector2 playerInput = new Vector2(rigidbody.transform.position.x, rigidbody.transform.position.y);
-       MovementUpdate(playerInput);
-       Debug.DrawRay(rigidbody.transform.position, Vector2.down, Color.white);
+        Vector2 playerInput = new Vector2();
+        playerInput.x = Input.GetAxisRaw("Horizontal");
 
+        if (isDead)
+        {
+            currentState = PlayerState.dead;
+        }
+
+        switch(currentState)
+        {
+            case PlayerState.dead:
+                // do nothing - we ded.
+                break;
+            case PlayerState.idle:
+                if (!isGrounded) currentState = PlayerState.jumping;
+                else if (velocity.x != 0) currentState = PlayerState.walking;
+                break;
+            case PlayerState.walking:
+                if (!isGrounded) currentState = PlayerState.jumping;
+                else if (velocity.x == 0) currentState = PlayerState.idle;
+                break;
+            case PlayerState.jumping:
+                if (isGrounded)
+                {
+                    if (velocity.x != 0) currentState = PlayerState.walking;
+                    else currentState = PlayerState.idle;
+                }
+                break;
+        }
+
+        MovementUpdate(playerInput);
+        JumpUpdate();
+        Dash();
+
+        if (!isGrounded)
+            velocity.y += gravity * Time.deltaTime;
+        else
+            velocity.y = 0;
+
+        body.velocity = velocity;
     }
 
     private void MovementUpdate(Vector2 playerInput)
     {
-        rigidbody.constraints = RigidbodyConstraints2D.FreezeRotation;
-        if (Input.GetKey(KeyCode.A))
+        if (playerInput.x < 0)
+            currentDirection = PlayerDirection.left;
+        else if (playerInput.x > 0)
+            currentDirection = PlayerDirection.right;
+
+        if (playerInput.x != 0)
         {
-            rigidbody.transform.position = new Vector2(rigidbody.transform.position.x - speed, rigidbody.transform.position.y);
-            isWalking = true;
-            direction = FacingDirection.left;
+            velocity.x += accelerationRate * playerInput.x * Time.deltaTime;
+            velocity.x = Mathf.Clamp(velocity.x, -maxSpeed, maxSpeed);
+        }
+        else
+        {
+            if (velocity.x > 0)
+            {
+                velocity.x -= decelerationRate * Time.deltaTime;
+                velocity.x = Mathf.Max(velocity.x, 0);
+            }
+            else if (velocity.x < 0)
+            {
+                velocity.x += decelerationRate * Time.deltaTime;
+                velocity.x = Mathf.Min(velocity.x, 0);
+            }
         }
 
-        else if (Input.GetKey(KeyCode.D))
+        /*
+         * Author: Michelle Vuong
+         * Description: Blink, once you click the F key the player will blink and shift a bit over
+         */
+        if (Input.GetKeyDown(KeyCode.F)) //pressing down F
         {
-            rigidbody.transform.position = new Vector2(rigidbody.transform.position.x + speed, rigidbody.transform.position.y);
-            isWalking = true;
-            direction = FacingDirection.right;
+            if (currentDirection == PlayerDirection.left) //when the player is facing left
+            {
+                transform.position = new Vector2(transform.position.x - 2, transform.position.y);
+                body.AddForce(Vector2.left * force, ForceMode2D.Impulse);
+            }
+
+            else if (currentDirection == PlayerDirection.right)
+            {
+                transform.position = new Vector2(transform.position.x + 2, transform.position.y);
+                body.AddForce(Vector2.right * force, ForceMode2D.Impulse);
+            }
         }
 
-        if (Input.GetKey(KeyCode.W))
+        
+    }
+
+    /*
+     * Authors: Michelle Vuong, Platformer final import
+     * I adjusted the JumpUpdate() method to try to turn it into variable jumping.
+     * The regular jump logic is still in there from the import, just adjusted.
+     * Description: Variable jump. Holding down the space key for longer makes you jump more
+     */
+
+    private void JumpUpdate()
+    {
+        if (isGrounded && Input.GetKey(KeyCode.Space))
         {
-            //RaycastHit2D hit = Physics2D.Raycast(rigidbody.transform.position, Vector2.down);
-            float jumpVelocity = 2* apexJump/apexTime;
-            float gravity = -2 * (apexJump / (Mathf.Pow(apexTime,2)));
-            jumpVelocity += gravity * Time.deltaTime;
-            //if (hit.collider.tag == "GroundTilemap")
-            //{
-            //    isGrounded = true;
-            //}
-            //else if (hit.collider.tag != "GroundTilemap")
-            //{
-            //    isGrounded = false;
-            //    Debug.Log("Im in the air");
-            //}
-            rigidbody.transform.position = new Vector2(rigidbody.transform.position.x, rigidbody.position.y + (jumpVelocity * Time.deltaTime));
-            Debug.Log(isGrounded);
+            velocity.y += jumpDistance * 2;
+            
+            if(velocity.y == initialJumpSpeed)
+            {
+                initialJumpSpeed = velocity.y;
+            }
+                
+            isGrounded = false;
         }
+    }
+
+    /*
+     * Author: Michelle Vuong
+     * Description: Dash
+     */
+    private void Dash()
+    {
+        if (Input.GetKeyDown(KeyCode.LeftShift)) //pressing down left shift
+        {
+            if (currentDirection == PlayerDirection.left) //when the player is facing left
+            {
+                velocity = new Vector2(transform.position.x * -dashForce, transform.position.y);
+            }
+
+            else if (currentDirection == PlayerDirection.right)
+            {
+                velocity = new Vector2(transform.position.x * dashForce, transform.position.y);
+            }
+        }
+    }
+
+
+    private void CheckForGround()
+    {
+        isGrounded = Physics2D.OverlapBox(
+            transform.position + Vector3.down * groundCheckOffset,
+            groundCheckSize,
+            0,
+            groundCheckMask);
+    }
+
+    public void OnDrawGizmos()
+    {
+        Gizmos.DrawWireCube(transform.position + Vector3.down * groundCheckOffset, groundCheckSize);
     }
 
     public bool IsWalking()
     {
-        return isWalking;
+        return velocity.x != 0;
     }
     public bool IsGrounded()
     {
         return isGrounded;
     }
 
-    public FacingDirection GetFacingDirection()
+    public PlayerDirection GetFacingDirection()
     {
-        
-        return direction;
+        return currentDirection;
     }
 }
