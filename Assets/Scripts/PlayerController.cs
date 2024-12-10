@@ -1,7 +1,7 @@
 using UnityEngine;
 
 /**
- * Horizontal/Veritcal movement here is not my code. Grabbed from A2_Platformer Template. 
+ * Horizontal/Veritcal default movement is grabbed from A2_Platformer Template. 
  * Numbers for movement may have been adjusted to match the movement that fits right for my platformer.
  */
 public enum PlayerDirection
@@ -39,9 +39,9 @@ public class PlayerController : MonoBehaviour
     private float decelerationRate;
 
 
-    private float dashForce = 2;
+    private float dashDistance = 3;
 
-    private float force = 100;
+    private float force = 2000;
 
     private float jumpDistance = 2;
 
@@ -140,20 +140,21 @@ public class PlayerController : MonoBehaviour
 
         /*
          * Author: Michelle Vuong
-         * Description: Blink, once you click the F key the player will blink and shift a bit over
+         * Description: Blink. When the player presses the Caps lock key the player will blink and shift.
          */
-        if (Input.GetKeyDown(KeyCode.F)) //pressing down F
+        if (Input.GetKeyDown(KeyCode.CapsLock)) //pressing down capslock
         {
             if (currentDirection == PlayerDirection.left) //when the player is facing left
             {
-                transform.position = new Vector2(transform.position.x - 2, transform.position.y);
-                body.AddForce(Vector2.left * force, ForceMode2D.Impulse);
+                transform.position = new Vector2(transform.position.x - 2, transform.position.y); //blink in the players direction
+                body.AddForce(Vector2.left * force, ForceMode2D.Force);
+                
             }
 
-            else if (currentDirection == PlayerDirection.right)
+            else if (currentDirection == PlayerDirection.right) //when the player is facing left
             {
-                transform.position = new Vector2(transform.position.x + 2, transform.position.y);
-                body.AddForce(Vector2.right * force, ForceMode2D.Impulse);
+                transform.position = new Vector2(transform.position.x + 2, transform.position.y); //blink in the players direction
+                body.AddForce(Vector2.right * force, ForceMode2D.Force);
             }
         }
 
@@ -169,45 +170,60 @@ public class PlayerController : MonoBehaviour
 
     private void JumpUpdate()
     {
-        if (isGrounded && Input.GetKey(KeyCode.Space))
+        if (isGrounded && Input.GetKey(KeyCode.Space)) //as the player holds down the space bar and is on the ground
         {
-            velocity.y += jumpDistance * 1.25f;
-            
-            if(velocity.y >= initialJumpSpeed)
+            velocity.y += jumpDistance + 1f; //constantly add more height to the jump depending on how long the player holds it down for
+           
+            if (velocity.y >= initialJumpSpeed) //if the jump velocity ever goes over the regular jump speed
             {
-                velocity.y = initialJumpSpeed;
-                ResetJump();
+                velocity.y = initialJumpSpeed; //set it to the max jump velocity
             }
-            
+            if (Input.GetKeyUp(KeyCode.Space)) //letting go of space bar
+            {
+                ResetJump(); //reset the velocity back to 0 so it the jump does not keep going higher
+            }
             isGrounded = false;
         }
-    }
 
-    private void ResetJump()
+    }
+    private void ResetJump() //resetting velocity back to 0, for readability.
     {
         velocity.y = 0;
     }
-
     /*
      * Author: Michelle Vuong
-     * Description: Dash. Holding left shift makes the player move forward
+     * Description: Dash. Holding left shift makes the player move forward by the amount of dashDistance.
      */
     private void Dash()
-    {
-        if (Input.GetKeyDown(KeyCode.LeftShift)) //pressing down left shift
+    { 
+        if (Input.GetKeyDown(KeyCode.LeftShift) && isGrounded) //check if the player is on the left side of the scene and if the player is on the ground
         {
-            if (currentDirection == PlayerDirection.left) //when the player is facing left
+            if (body.transform.position.x < 0) //check if the player is on the left side of the scene
             {
-                velocity = new Vector2(transform.position.x * -dashForce, transform.position.y);
+                if(currentDirection == PlayerDirection.left) //if the player is facing left
+                {
+                    velocity = new Vector2(transform.position.x * dashDistance, transform.position.y); //dash in the current direction of the player
+                }
+                if(currentDirection == PlayerDirection.right) //if the player is facing right
+                {
+                    velocity = new Vector2(transform.position.x * -dashDistance, transform.position.y); //dash in the current direction of the player
+                }
+               
             }
 
-            else if (currentDirection == PlayerDirection.right)
+            else if (body.transform.position.x >= 0 && isGrounded) //check if the player is on the right side of the scene and if the player is on the ground
             {
-                velocity = new Vector2(transform.position.x * dashForce, transform.position.y);
+                if (currentDirection == PlayerDirection.left) //if the player is facing left
+                {
+                    velocity = new Vector2(transform.position.x * -dashDistance, transform.position.y); //dash in the current direction of the player
+                }
+                if (currentDirection == PlayerDirection.right) //if the player is facing right
+                {
+                    velocity = new Vector2(transform.position.x * dashDistance, transform.position.y); //dash in the current direction of the player
+                }
             }
         }
     }
-
 
     private void CheckForGround()
     {
