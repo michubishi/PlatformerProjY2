@@ -39,7 +39,7 @@ public class PlayerController : MonoBehaviour
     private float decelerationRate;
 
 
-    private float dashDistance = 3;
+    private float dashDistance = 10;
 
     private float force = 2000;
 
@@ -195,34 +195,20 @@ public class PlayerController : MonoBehaviour
      * Description: Dash. Holding left shift makes the player move forward by the amount of dashDistance.
      */
     private void Dash()
-    { 
-        if (Input.GetKeyDown(KeyCode.LeftShift) && isGrounded) //check if the player is on the left side of the scene and if the player is on the ground
+    {
+        if (Input.GetKeyDown(KeyCode.LeftShift)) //When the player clicks the left shift key
         {
-            if (body.transform.position.x < 0) //check if the player is on the left side of the scene
+            if (currentDirection == PlayerDirection.left) //checks if the player is currently facing left
             {
-                if(currentDirection == PlayerDirection.left) //if the player is facing left
-                {
-                    velocity = new Vector2(transform.position.x * dashDistance, transform.position.y); //dash in the current direction of the player
-                }
-                if(currentDirection == PlayerDirection.right) //if the player is facing right
-                {
-                    velocity = new Vector2(transform.position.x * -dashDistance, transform.position.y); //dash in the current direction of the player
-                }
-               
+                velocity.x -= dashDistance; //dash forward 
             }
-
-            else if (body.transform.position.x >= 0 && isGrounded) //check if the player is on the right side of the scene and if the player is on the ground
+            if (currentDirection == PlayerDirection.right) //checks if the player is currently facing right
             {
-                if (currentDirection == PlayerDirection.left) //if the player is facing left
-                {
-                    velocity = new Vector2(transform.position.x * -dashDistance, transform.position.y); //dash in the current direction of the player
-                }
-                if (currentDirection == PlayerDirection.right) //if the player is facing right
-                {
-                    velocity = new Vector2(transform.position.x * dashDistance, transform.position.y); //dash in the current direction of the player
-                }
+                velocity.x += dashDistance; //dash forward 
+
             }
         }
+
     }
 
     private void CheckForGround()
